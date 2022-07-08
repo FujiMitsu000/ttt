@@ -1,0 +1,49 @@
+.players {
+    height: 130px;
+    /* width: 100px; */
+    /* box-shadow: 0 0 3px 2px rgb(179, 204, 244); */
+    /* border: 0.1px solid rgb(179, 204, 244); */
+    /* background-color: rgb(179, 204, 244); */
+    border: 1px solid white;
+    background-color: white;
+    text-align: center;
+    border-radius:10px;
+}
+
+.background_player {
+    margin: 30px 100px 300px;
+    height: 130px;
+    width: 100px;
+    padding: 5px;
+    align-self: center;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 0 3px 1px white;
+}
+
+.background_current_move {
+    background-color: #ff0000;
+    box-shadow: 0 0 3px 1px #ff0000;
+}
+
+.background_draw {
+    background-color: #FFCC73;
+    box-shadow: 0 0 3px 1px #FFCC73;
+}
+
+.background_winner {
+    background-color: #22d45d;
+    box-shadow: 0 0 3px 1px #22d45d;
+}
+
+
+.background_second_player {
+    margin: 30px 100px 300px;
+    height: 130px;
+    width: 100px;
+    padding: 5px;
+    /* padding-top: 0px; */
+    align-self: center;
+    border-radius: 10px;
+
+}

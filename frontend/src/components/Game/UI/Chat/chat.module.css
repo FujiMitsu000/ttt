@@ -1,0 +1,51 @@
+.chat {
+    display: grid;
+    flex-direction: row;
+    background-color: white;
+    height: 250px;
+    width: 70vh;
+    margin: auto;
+    margin-top: 40px;
+}
+
+.chatWindow {
+    display: flex; 
+    flex-direction: column;
+    overflow: auto;
+}
+
+.chatInputs {
+    align-self: flex-end;
+    height: 4.5vh;
+}
+
+.chatText {
+    width: 70%;
+    height: 100%;
+    align-self: flex-start;
+    font-size: large;
+    outline: 1px solid darkgray;
+    border: none;
+    background-color: darkgray;
+    padding: 0px;
+    border-radius: 0px;
+}
+
+.chatSubmit {
+    border-radius: 0px;
+    padding: 0px;
+    border: none;
+    outline: none;
+    height: 100%;
+    width: 30%;
+    font-size: larger;
+    background-color: rgba(21, 21, 248, 0.789);
+}
+
+.chatSubmit:hover {
+    background-color: rgba(21, 21, 248, 0.866);
+}
+
+.chatSubmit:active {
+    background-color: rgba(21, 21, 248, 0.902);
+}

@@ -17,6 +17,39 @@ module.exports = {
             return await query;
         }
     },
+    getUserByUsername: async(username) => {
+        const db = knex(config.development.database);
+        const query = await db
+            .select({
+                id: 'id',
+                username: 'username',
+                password : 'password',
+                status: 'status',
+                createdAt: 'created_at',
+                updatedAt: 'updated_at'
+            })
+            .from('users')
+            .where({'status': 'active'})
+            .andWhere('username', '=', username);
+            // console.log(query);
+        return await query;
+    },
+    getUserById: async(userId) => {
+        const db = knex(config.development.database);
+        const query = await db
+            .select({
+                id: 'id',
+                username: 'username',
+                status: 'status',
+                createdAt: 'created_at',
+                updatedAt: 'updated_at'
+            })
+            .from('users')
+            .where({'status': 'active'})
+            .andWhere('id', '=', userId);
+        
+        return await query;
+    },
     getUsers: async(req, res) => {
         const db = knex(config.development.database);
         const users = await db
@@ -43,8 +76,8 @@ module.exports = {
             createdAt: 'created_at',
             updatedAt: 'updated_at'
         })
-        .from({u: 'users'})
-        .where({'u.id': userId, 'u.status': 'active'})
+        .from('users')
+        .where({'id': userId, 'status': 'active'});
 
         if (!user) {
             res.sendStatus(400);
@@ -85,7 +118,15 @@ module.exports = {
             return;
         }
 
-        const user = await db
+        const [userExist] = await getUserByUsername(username);
+
+        if (userExist) {
+            return res
+                .status(400)
+                .json({msg: `Пользователя c ником ${username} уже существует`})
+        }
+
+        const [user] = await db
             .into('users')
             .insert({
                 username,
@@ -93,11 +134,35 @@ module.exports = {
                 status,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
+            })
+            .returning('id');
+            console.log(user.id);
+        const [roleId] = await db
+            .into('assigned_roles')
+            .insert({
+                user_id: user.id,
+                role_id: 1
+            })
+            .returning('role_id');
+            console.log(roleId);
+        const [userRole] = await db
+            .into('roles')
+            .select({
+                role: 'role'
+            })
+            .where({'id': roleId.role_id})
+            .returning('role');
+        await db
+            .into('tokens')
+            .insert({
+                user_id: user.id,
+                token: jwt.sign({sub: {userId: user.id, userRole: userRole.role}}, 'meow'),
+                // expires_in: new Date().toISOString()
             });
 
-    res.json({user});
+    res.json({msg: `Пользователь с ником ${username} успешно создан`});
     },
-    updateUser: async (req, res) => {
+    updateUserPassword: async (req, res) => {
         const {userId} = req.params;
         const {password} = req.body;
         const db = knex(config.development.database);
@@ -119,33 +184,52 @@ module.exports = {
             res.sendStatus(200);
 
             return;
-        } else if (!newPassword && blockedUser === 'blocked') {
+        }
+    },
+    updateUserStatus: async(req, res) => {
+        const {username} = req.body;
+        const db = knex(config.development.database);
+
+        const {blockedUser} = await db
+        .first({blockedUser: 'status'})
+        .from('users')
+        .where({username: username})
+
+        if (!blockedUser) {
+            res.json({msg: `Пользователя с ником ${username} нет в базе`});
+
+            return;
+        } else if (blockedUser === 'active') {
+            res.json({msg: `Пользователь ${username} уже имеет статус "active"`});
+
+            return;
+        } else if (blockedUser === 'blocked') {
             await db
             .from('users')
             .update({
                 status: 'active',
                 updated_at: new Date().toISOString()
             })
-            .where({id: userId})
+            .where({username: username})
             
-            res.sendStatus(200);
+            res.json({msg: 'Статус обновлен'});
 
             return;
         } else {
             res.sendStatus(400);
         }
     },
-    deleteUser: async (req, res) => {
-        const {userId} = req.params;
+    blockUser: async (req, res) => {
+        const {username} = req.body;
         const db = knex(config.development.database);
-        
+        console.log(req.body);
         const {blockedUser} = await db
             .first({blockedUser: 'status'})
             .from('users')
-            .where({id: userId})
+            .where({username: username})
         
         if (blockedUser === 'blocked') {
-            res.sendStatus(400);
+            res.json({msg: `Пользователь ${username} уже заблокирован`});
 
             return;
         }
@@ -156,8 +240,8 @@ module.exports = {
                 status: 'blocked',
                 updated_at: new Date().toISOString()
             })
-            .where({id: userId})
+            .where({username: username})
         
-        res.sendStatus(200);
+            res.json({msg: `Пользователь ${username} заблокирован`});
     }
 }

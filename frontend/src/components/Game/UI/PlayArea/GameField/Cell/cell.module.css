@@ -1,0 +1,28 @@
+.gameField_cell {
+    /* background: #b0cff8; */
+    background-color: white;
+    border: 2px solid #2D3540;
+    height: 150px;
+    width: 150px;
+    padding: 10px;
+    /* outline: 2px solid #2D3540; */
+    
+    /* cursor: help; */
+    /* border: 2px solid #1D2C3B; */
+  }
+
+  .cross {
+    height: 85px;
+    width: 85px;
+    margin: -10px;
+    padding: 43px;
+    fill: #214e71;
+  }
+  
+  .circle {
+    height: 85px;
+    width: 85px;
+    margin: -10px;
+    padding: 43px;
+    fill: #e64c34;
+  }

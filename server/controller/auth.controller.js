@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken'); 
 const config = require('../configs');
 const { validationResult } = require('express-validator');
-const { getUserByLogin } = require('./players.controller')
+const { getUserByLogin, getUserByUsername } = require('./players.controller')
 
 module.exports = {
     registrationUser: async(req, res) => {
@@ -26,12 +26,13 @@ module.exports = {
         }]);
 
         if (userExist) {
+            
             return res
                 .status(400)
-                .json({msg: `Пользователь c ником ${username} уже существует`})
+                .json({registrationErrors: {errors: [{msg: `Пользователь c ником ${username} уже существует.`}]}})
         }
 
-        const user = await db
+        await db
             .into('users')
             .insert({
                 username,
@@ -41,23 +42,16 @@ module.exports = {
                 updated_at: new Date().toISOString()
             })
             .returning('id');
-            console.log(user[0].id);
+
         await db
             .into('assigned_roles')
             .insert({
-                user_id: user[0].id,
+                user_id: user.id,
                 role_id: 1
-            });
+            })
+            .returning('role_id');
 
-        await db
-            .into('sessions')
-            .insert({
-                user_id: user[0].id,
-                token: jwt.sign({sub: user[0]}, 'qwerty'),
-                expires_in: new Date().toISOString()
-            });
-
-    res.json(user[0]);
+    res.json([{msg: 'Регистрация прошла успешно!'}, {msg: 'Нажмите "Вход"'}]);
     },
     loginUser: async(req, res) => {
         const db = knex(config.development.database);
@@ -69,11 +63,7 @@ module.exports = {
             return;
         }
 
-        const [userExist] = await getUserByLogin(['username', 'password'], [{
-            left: 'username',
-            operator: '=',
-            right: username
-        }]);
+        const [userExist] = await getUserByUsername(username);
 
         if (!userExist) {
             return res
@@ -81,30 +71,54 @@ module.exports = {
                 .json({msg: `Пользователя c ником ${username} не существует`})
         }
 
-        const token = await db
-            .select('token')
-            .from('sessions')
-            .where({'user_id': userExist.id});
+        // const [token] = await db
+        //     .select('token')
+        //     .from('sessions') /////////////////
+        //     .where({'user_id': userExist.id});
+
+        const [userId] = await db
+            .select('id')
+            .from('users')
+            .where({'username': username})
+            console.log(userId);
+        const [roleId] = await db
+            .select('role_id')
+            .from('assigned_roles')
+            .where({'user_id': userId.id})
+            console.log(roleId);
+        const [userRole] = await db
+            .into('roles')
+            .select({
+                role: 'role'
+            })
+            .where({'id': roleId.role_id})
+        // await db
+        //     .into('sessions') //////////////
+        //     .insert({
+        //         user_id: user.id,
+                
+        //         // expires_in: 3600
+        //     });
 
         res.json(response = {
-            'userId': userExist.id, 
-            'token': token[0].token
+            'token': jwt.sign({sub: {id: userId.id, username, userRole: userRole.role}}, 'meow'),
         });
     },
     createToken: async(req, res) => {
         const {username, password} = req.body;
-
+        // console.log(req.body);
         const [user] = await getUserByLogin(['username', 'password'], [{
             left: 'username',
             operator: '=',
             right: username
         }]);
+        // console.log(user.password);
         const isEqual = await bcrypt.compare(password, user.password);
         
         if (isEqual) {
-            res
+            return res
                 .status(200)
-                .json({token: jwt.sign({sub: user.id}, 'qwerty')});
+                .json({token: jwt.sign({sub: user.id}, 'meow')});
         } else {
             return res
                 .status(400)
@@ -115,35 +129,35 @@ module.exports = {
         const db = knex(config.development.database);
         const {userId} = req.params;
 
-        const token = await db
+        const [token] = await db
             .select('token')
-            .from('sessions')
+            .from('tokens')
             .where({'user_id': userId});
 
-    res.json(token[0].token);
+    res.json(token.token);
     },
     checkToken: async(req, res) => {
         const db = knex(config.development.database);
         const {userId, token} = req.body;
         console.log(req.body);
-        console.log(req.body);
+
         if(!userId || !token) {
             res
             .status(400)
             .json({msg: 'token или userId отствуют'})
         }
 
-        const tokenBd = await db
+        const [tokenDb] = await db
             .select('token')
-            .from('sessions')
+            .from('tokens')
             .where({'user_id': userId});
 
-        if (!tokenBd) {
+        if (!tokenDb) {
             res
             .status(400)
             .json({msg: `Токен с userId:${userId} отсутсвует в бд`})
         }
 
-        return res.json(token == tokenBd[0].token ? true : false);
+        return res.json(token == tokenDb.token ? true : false);
     },
 };

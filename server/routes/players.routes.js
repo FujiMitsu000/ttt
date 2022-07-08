@@ -3,8 +3,9 @@ const {
 getUsers, 
 getUser, 
 createUser, 
-deleteUser, 
-updateUser, 
+blockUser, 
+updateUserStatus,
+updateUserPassword,
 } = require('../controller/players.controller');
 const { catcher } = require('../utils/catcher');
 
@@ -13,7 +14,8 @@ const router = Router();
 router.get('/', catcher(getUsers));
 router.get('/:userId', catcher(getUser));
 router.post('/', catcher(createUser));
-router.put('/:userId', catcher(updateUser));
-router.delete('/:userId', catcher(deleteUser));
+router.put('/password', catcher(updateUserPassword));
+router.put('/status', catcher(updateUserStatus));
+router.delete('/delete', catcher(blockUser));
 
 module.exports = router;
